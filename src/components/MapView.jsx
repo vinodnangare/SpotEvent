@@ -1,9 +1,19 @@
-import React from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import React, { useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
+// Component to recenter map when location changes
+function RecenterMap({ lat, lon }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView([lat, lon], 12); // zoom 12 when new city selected
+  }, [lat, lon, map]);
+  return null;
+}
+
 export default function MapView({ userLocation, events }) {
-  if (!userLocation) return <p className="text-gray-600">Allow GPS to see nearby events.</p>;
+  if (!userLocation)
+    return <p className="text-gray-600">Search for a city or allow GPS to see nearby events.</p>;
 
   return (
     <MapContainer
@@ -22,14 +32,12 @@ export default function MapView({ userLocation, events }) {
       <Marker position={[userLocation.lat, userLocation.lon]}>
         <Popup>Your Location</Popup>
       </Marker>
+        {/* Auto-recenter when location changes */}
+        <RecenterMap lat={userLocation.lat} lon={userLocation.lon} />
 
-      {/* Event Markers */}
-      {events.map(event => (
-        <Marker key={event.id} position={[event.lat, event.lon]}>
-          <Popup>
-            <strong>{event.title}</strong> <br />
-            {event.date}
-          </Popup>
+        {/* User Marker */}
+        <Marker position={[userLocation.lat, userLocation.lon]}>
+          <Popup>Your Location</Popup
         </Marker>
       ))}
     </MapContainer>
