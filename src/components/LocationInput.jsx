@@ -3,10 +3,41 @@ import React, { useState } from "react";
 export default function LocationInput({ onLocationChange }) {
   const [location, setLocation] = useState("");
 
-  const handleManualSubmit = (e) => {
+  const handleManualSubmit = async (e) => {
     e.preventDefault();
-    if (onLocationChange) onLocationChange(location);
-    alert(`Searching events near: ${location}`);
+
+    // Try to parse coordinates first
+    const parts = location.split(",");
+    if (parts.length === 2) {
+      const lat = parseFloat(parts[0]);
+      const lon = parseFloat(parts[1]);
+      if (!isNaN(lat) && !isNaN(lon)) {
+        if (onLocationChange) onLocationChange({ lat, lon });
+        return;
+      }
+    }
+
+    // Otherwise, treat as a city name → use OpenStreetMap Nominatim
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          location
+        )}`
+      );
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lon = parseFloat(data[0].lon);
+        setLocation(`${lat},${lon}`); // update input field
+        if (onLocationChange) onLocationChange({ lat, lon });
+      } else {
+        alert("City not found. Please enter a valid city name.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error fetching city coordinates.");
+    }
   };
 
   const handleUseGPS = () => {
@@ -32,7 +63,7 @@ export default function LocationInput({ onLocationChange }) {
       <form onSubmit={handleManualSubmit} className="flex flex-1 gap-2">
         <input
           type="text"
-          placeholder="Enter your city or coordinates"
+          placeholder="Enter city or coordinates"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
           className="flex-1 border p-2 rounded-md"
